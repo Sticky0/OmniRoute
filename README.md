@@ -19,9 +19,39 @@ The `/home` dashboard page now shows usage at a glance, without opening Analytic
 | Usage block          | Total, input and output tokens, estimated cost, errors with success and fallback rate, and the activity heatmap. Same cards as Analytics. |
 | Range selector       | 1D, 7D, 30D, 90D, YTD, All and Custom (reuses the Analytics range picker).                                                                |
 | Usage by combo       | Requests and tokens per combo for the selected range. New endpoint `GET /api/usage/by-combo`.                                             |
-| Provider quotas      | Quota card next to the usage block for every active connection with quota tracking, showing every quota row (no "show more" toggle).      |
-| Layout               | Usage and quota side by side; topology and recent requests are shorter and share the same height.                                         |
+| Provider quotas      | Quota card next to the usage block for every provider with quota tracking, showing every quota row (no "show more" toggle).               |
+| Active only          | Only active connections appear, the same rule as the topology. Deactivated ones are hidden.                                               |
+| Account labels       | The connection name is shown, never the account email (a name that looks like an email is hidden too).                                    |
+| Layout               | Usage and quota side by side; the usage cards keep their natural height; topology and recent requests are shorter and share one height.   |
+| Show or hide         | Three new switches in Settings > Appearance > "Pin Information to Home Page" (see below). All are on by default.                          |
 | Removed from `/home` | The host CPU and memory cards (the component still exists, it is just not mounted).                                                       |
+
+### Home switches
+
+Settings > Appearance > "Pin Information to Home Page" next to the existing Quick Start and Provider Topology switches:
+
+| Setting                     | Shows or hides                                                                   |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| `showUsageStatsOnHome`      | The usage cards and the range selector. When off, `/home` does not fetch usage.  |
+| `showActivityHeatmapOnHome` | The activity heatmap. Disabled while the usage cards are off.                    |
+| `showProviderQuotaOnHome`   | The provider quota card. It stays visible on its own if the usage cards are off. |
+
+A missing setting counts as "show", so a fresh install looks the same as before. The page reads
+them on the server: reload `/home` after changing one.
+
+### Sticky palette
+
+A third colour palette next to Editions and Classic, selectable in Settings > Appearance > Color
+palette. It is opt-in: Editions stays the default.
+
+- Light: warm paper background, ink text and a purple accent. Dark: night plum background, paper text and a lighter purple for fills and links.
+- Success, warning, error and info use lime, orange, red and blue. The text shades were darkened to keep at least 4.5:1 contrast.
+- Rounder corners (controls 0.75rem, surfaces 1rem) and soft purple-tinted shadows.
+- It only applies under `data-ci-appearance="sticky"`, so the other palettes are untouched.
+- The tokens live in `src/app/sticky-palette.css`, imported from `globals.css`.
+
+Charts use 8 colours derived from the palette, which has no categorical set of its own. Check
+them on your screens before relying on them.
 
 ### New endpoint
 
@@ -50,13 +80,45 @@ Calls without a combo are ignored. Upstream HTTP attempts are not counted as ext
 
 ### Changed files
 
-- `src/app/(dashboard)/home/HomeUsageWidgets.tsx` (new): the usage block.
-- `src/app/(dashboard)/home/page.tsx`: mounts the usage block with the quota card as `aside`.
-- `src/app/(dashboard)/home/ProviderQuotaWidget.tsx`: new optional `providers` filter and `showAllQuotas` props; the provider header sits above its quota rows.
+- `src/app/(dashboard)/home/HomeUsageWidgets.tsx` (new): the usage block, with `showStats` and `showHeatmap` props.
+- `src/app/(dashboard)/home/page.tsx` and `loadHomeSettings.ts`: read the three switches on the server and mount the usage block with the quota card as `aside`.
+- `src/app/(dashboard)/home/ProviderQuotaWidget.tsx`: new optional `providers` filter and `showAllQuotas` props; skips deactivated connections and hides account emails.
+- `src/app/(dashboard)/dashboard/settings/components/AppearanceTab.tsx`, `src/shared/validation/settingsSchemas.ts`: the three switches and the Sticky palette option.
+- `src/app/sticky-palette.css` (new), `src/app/globals.css`, `src/shared/constants/appearancePalette.ts`, `pwaThemeColors.ts`, `src/store/themeStore.ts`, `src/shared/utils/themeBootScript.ts`, `src/app/global-error.tsx`: the Sticky palette.
+- `.github/workflows/fork-build.yml` and `fork-sync.yml` (new): the build and sync workflows (see below).
 - `src/app/(dashboard)/home/ProviderTopology.tsx`, `HomeRecentRequests.tsx` and `dashboard/HomePageClient.tsx`: shorter panels with matching height.
 - `src/app/api/usage/by-combo/route.ts` and `src/lib/db/comboUsageSummary.ts` (new): the by-combo endpoint and its query.
-- `src/i18n/messages/en.json` and `es.json`: new `home` keys. Other locales fall back to English.
-- Tests: `tests/unit/usage-by-combo.test.ts`, `tests/unit/ui/home-usage-widgets.test.tsx` and `tests/unit/ui/provider-quota-show-all-quotas.test.tsx`.
+- `src/i18n/messages/en.json` and `es.json`: new `home` and palette keys. Other locales fall back to English.
+- Tests: `tests/unit/usage-by-combo.test.ts`, `tests/unit/ui/home-usage-widgets.test.tsx`, `tests/unit/ui/provider-quota-show-all-quotas.test.tsx`, `tests/unit/appearance-widget-settings-schema.test.ts` and `tests/unit/theme-boot-script-palette.test.ts`.
+
+## Get the build without compiling
+
+GitHub Actions builds the package, so you do not need to run `npm run build` on your machine.
+
+- **`fork-build.yml`** runs on every push to `release/v*` (or by hand). It runs `npm run build:release`, packs the result with `npm pack` and publishes it as the release `fork-v<version>-<run>`. It also refreshes the rolling release `fork-latest`.
+- **`fork-sync.yml`** runs daily (05:17 UTC) or by hand. It finds the newest `release/vX.Y.Z` of the upstream repository. If the fork's branch of that name does not contain it, it merges upstream into a temporary branch, opens a pull request and merges it. For a new release it creates the branch from upstream and merges the previous fork release into it. A conflict other than `README.md` aborts and opens an issue. It needs the secret `FORK_SYNC_TOKEN` (a personal access token with Contents, Pull requests and Workflows write access).
+
+Install the latest build:
+
+```bash
+curl -L -o omniroute.tgz \
+  https://github.com/Sticky0/OmniRoute/releases/download/fork-latest/omniroute-latest.tgz
+npm install --prefix ~/.local/share/omniroute-fork ./omniroute.tgz
+node ~/.local/share/omniroute-fork/node_modules/omniroute/bin/omniroute.mjs
+```
+
+Restart whatever runs it (for example a systemd user service) after installing. `dist/BUILD_SHA`
+inside the package is the commit it was built from.
+
+## Repository rules
+
+Two rulesets protect the fork. Both let the repository admin bypass them.
+
+- **No direct pushes** (every branch): no branch deletion, no force push, changes only through a pull request.
+- **Release needs PR and approval** (`release/**`): a pull request with one approval, code owner review, resolved conversations, and stale approvals dismissed on new pushes.
+
+`.github/CODEOWNERS` names the fork owner. Merged branches are deleted automatically. With a single
+collaborator nobody else can approve, so the admin bypass is how pull requests get merged.
 
 ## Requirements
 
@@ -93,6 +155,11 @@ node --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts \
 npx vitest run --config vitest.config.ts \
   tests/unit/ui/home-usage-widgets.test.tsx \
   tests/unit/ui/provider-quota-show-all-quotas.test.tsx
+
+# Settings schema and palette boot script (Node test runner)
+node --import tsx --test \
+  tests/unit/appearance-widget-settings-schema.test.ts \
+  tests/unit/theme-boot-script-palette.test.ts
 
 npm run lint
 ```
