@@ -14,7 +14,7 @@
  * visitor with nothing stored, already gets Editions.
  */
 
-export const APPEARANCE_PALETTES = ["editions", "classic"] as const;
+export const APPEARANCE_PALETTES = ["editions", "classic", "sticky"] as const;
 
 export type AppearancePalette = (typeof APPEARANCE_PALETTES)[number];
 
@@ -23,6 +23,7 @@ export const DEFAULT_APPEARANCE_PALETTE: AppearancePalette = "editions";
 /** The kit's opt-in attribute and the value that selects Editions. */
 export const APPEARANCE_ATTRIBUTE = "data-ci-appearance";
 export const EDITIONS_APPEARANCE_VALUE = "editions";
+export const STICKY_APPEARANCE_VALUE = "sticky";
 
 export function isAppearancePalette(value: unknown): value is AppearancePalette {
   return typeof value === "string" && (APPEARANCE_PALETTES as readonly string[]).includes(value);

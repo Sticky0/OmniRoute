@@ -71,6 +71,11 @@ export default function AppearanceTab() {
       description: t("paletteClassicDesc"),
       icon: "history",
     },
+    sticky: {
+      label: t("paletteSticky"),
+      description: t("paletteStickyDesc"),
+      icon: "palette",
+    },
   };
 
   useEffect(() => {

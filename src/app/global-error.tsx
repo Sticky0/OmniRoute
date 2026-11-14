@@ -179,7 +179,13 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
       lang={locale}
       className={dark ? "ci-theme dark" : "ci-theme"}
       data-theme={dark ? "dark" : "light"}
-      data-ci-appearance={palette === "classic" ? undefined : EDITIONS_APPEARANCE_VALUE}
+      data-ci-appearance={
+        palette === "classic"
+          ? undefined
+          : palette === "sticky"
+            ? "sticky"
+            : EDITIONS_APPEARANCE_VALUE
+      }
       style={{ colorScheme: dark ? "dark" : "light" }}
       suppressHydrationWarning
     >
