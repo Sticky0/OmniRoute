@@ -336,12 +336,12 @@ export default function HomeUsageWidgets({
   };
 
   if (!showStats) {
-    return aside ? <section className="mb-3">{aside}</section> : null;
+    return aside ? <section>{aside}</section> : null;
   }
 
   return (
     <section
-      className="mb-3 grid grid-cols-1 gap-x-3 gap-y-2 lg:grid-cols-[2fr_1fr]"
+      className="grid grid-cols-1 gap-x-3 gap-y-2 lg:grid-cols-[2fr_1fr]"
       aria-busy={loading}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
