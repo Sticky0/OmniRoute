@@ -65,6 +65,30 @@ async function render(showAllQuotas?: boolean) {
   return container.textContent ?? "";
 }
 
+describe("ProviderQuotaWidget active connections", () => {
+  it("omits deactivated connections and keeps the ones without an isActive flag", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) =>
+        String(input).startsWith("/api/usage/provider-limits")
+          ? jsonResponse({ caches: { c1: { quotas: {} }, c2: { quotas: {} }, c3: { quotas: {} } } })
+          : jsonResponse({
+              connections: [
+                { ...CONNECTION, id: "c1", name: "enabled", isActive: true },
+                { ...CONNECTION, id: "c2", name: "disabled", isActive: false },
+                { ...CONNECTION, id: "c3", name: "unflagged" },
+              ],
+            })
+      )
+    );
+    const text = await render(true);
+
+    expect(text).toContain("enabled");
+    expect(text).toContain("unflagged");
+    expect(text).not.toContain("disabled");
+  });
+});
+
 describe("ProviderQuotaWidget showAllQuotas", () => {
   it("shows only the primary quotas and the toggle by default", async () => {
     const text = await render();
