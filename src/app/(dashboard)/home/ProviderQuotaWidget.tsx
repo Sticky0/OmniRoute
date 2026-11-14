@@ -29,6 +29,7 @@ type Connection = {
   id: string;
   provider: string;
   authType?: string;
+  isActive?: boolean;
   name?: string;
   displayName?: string;
   email?: string;
@@ -220,6 +221,7 @@ export default function ProviderQuotaWidget({
       const quotaResponseData = quotasResponse.ok ? await quotasResponse.json() : {};
       const relevant = connectionList.filter(
         (connection) =>
+          connection.isActive !== false &&
           supportsProviderQuota(connection.provider, connection) &&
           (!providers || providers.includes(connection.provider)) &&
           (connection.authType === "oauth" || connection.authType === "apikey")
