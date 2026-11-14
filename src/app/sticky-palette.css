@@ -89,6 +89,19 @@ html:root[data-ci-appearance="sticky"] .ci-theme {
   --ci-sidebar-active-fg: #fff8e1;
   --primary: var(--ci-button-primary-bg);
   --primary-foreground: var(--ci-button-primary-fg);
+  --ci-radius-sm: 0.5rem;
+  --ci-radius-md: 0.75rem;
+  --ci-radius-lg: 1rem;
+  --ci-radius-xl: 1.25rem;
+  --ci-radius-2xl: 1.75rem;
+  --ci-radius-control: 0.75rem;
+  --ci-radius-surface: 1rem;
+  --ci-shadow-xs: 0 1px 2px rgb(42 10 82 / 0.06);
+  --ci-shadow-sm: 0 1px 2px rgb(42 10 82 / 0.05), 0 4px 12px rgb(42 10 82 / 0.06);
+  --ci-shadow-md: 0 2px 4px rgb(42 10 82 / 0.05), 0 12px 30px rgb(42 10 82 / 0.1);
+  --ci-shadow-lg: 0 4px 8px rgb(42 10 82 / 0.06), 0 24px 60px rgb(42 10 82 / 0.14);
+  --ci-shadow-xl: 0 8px 16px rgb(42 10 82 / 0.08), 0 32px 80px rgb(42 10 82 / 0.18);
+  --ci-focus-ring-width: 3px;
 }
 
 :is(
@@ -176,4 +189,9 @@ html:root[data-ci-appearance="sticky"][data-theme="dark"] .ci-theme {
   --ci-button-accent-fg: #151716;
   --ci-sidebar-active-bg: #ce93d8;
   --ci-sidebar-active-fg: #1b0a2e;
+  --ci-shadow-xs: 0 1px 2px rgb(0 0 0 / 0.34);
+  --ci-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px rgb(0 0 0 / 0.28);
+  --ci-shadow-md: 0 2px 4px rgb(0 0 0 / 0.3), 0 12px 30px rgb(0 0 0 / 0.38);
+  --ci-shadow-lg: 0 4px 8px rgb(0 0 0 / 0.32), 0 24px 60px rgb(0 0 0 / 0.46);
+  --ci-shadow-xl: 0 8px 16px rgb(0 0 0 / 0.36), 0 32px 80px rgb(0 0 0 / 0.5);
 }
