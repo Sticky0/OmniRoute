@@ -12,7 +12,7 @@ The full upstream README is kept as [`docs/ORIGINAL_README.md`](docs/ORIGINAL_RE
 
 The `/home` dashboard page now shows usage at a glance, without opening Analytics.
 
-![The /home page: usage cards with the range selector, usage by combo, activity heatmap, provider quotas (Claude Code, OpenAI Codex), provider topology and recent requests](docs/screenshots/fork-home.png)
+![The /home page: usage cards with the range selector and the change against the previous period, usage by combo, activity heatmap, provider quota card, provider topology and recent requests](docs/screenshots/home-usage-widgets.png)
 
 | Area                 | Change                                                                                                                                    |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -32,6 +32,8 @@ The `/home` dashboard page now shows usage at a glance, without opening Analytic
 ### Home switches
 
 Settings > Appearance > "Pin Information to Home Page" next to the existing Quick Start and Provider Topology switches:
+
+![Pin Information to Home Page: Quick Start, Provider Topology, Usage and statistics, Activity heatmap and Provider quota](docs/screenshots/home-visibility-switches.png)
 
 | Setting                     | Shows or hides                                                                   |
 | --------------------------- | -------------------------------------------------------------------------------- |
@@ -90,10 +92,11 @@ Calls without a combo are ignored. Upstream HTTP attempts are not counted as ext
 - `src/app/(dashboard)/dashboard/settings/components/AppearanceTab.tsx`, `src/shared/validation/settingsSchemas.ts`: the three switches and the Sticky palette option.
 - `src/app/sticky-palette.css` (new), `src/app/globals.css`, `src/shared/constants/appearancePalette.ts`, `pwaThemeColors.ts`, `src/store/themeStore.ts`, `src/shared/utils/themeBootScript.ts`, `src/app/global-error.tsx`: the Sticky palette.
 - `.github/workflows/fork-build.yml` and `fork-sync.yml` (new): the build and sync workflows (see below).
-- `src/app/(dashboard)/home/ProviderTopology.tsx`, `HomeRecentRequests.tsx` and `dashboard/HomePageClient.tsx`: shorter panels with matching height.
+- `src/app/(dashboard)/dashboard/HomePageClient.tsx`: renders the usage block (its `children`) right after Quick Start and uses one 12px gap between blocks.
+- `src/app/(dashboard)/home/ProviderTopology.tsx` and `HomeRecentRequests.tsx`: shorter panels with matching height.
 - `src/app/api/usage/by-combo/route.ts` and `src/lib/db/comboUsageSummary.ts` (new): the by-combo endpoint and its query.
 - `src/i18n/messages/en.json` and `es.json`: new `home` and palette keys. Other locales fall back to English.
-- Tests: `tests/unit/usage-by-combo.test.ts`, `tests/unit/ui/home-usage-widgets.test.tsx`, `tests/unit/ui/provider-quota-show-all-quotas.test.tsx`, `tests/unit/appearance-widget-settings-schema.test.ts` and `tests/unit/theme-boot-script-palette.test.ts`.
+- Tests: `tests/unit/usage-by-combo.test.ts`, `home-usage-trend.test.ts`, `home-quota-paging.test.ts`, `home-spacing.test.ts`, `ui/home-usage-widgets.test.tsx`, `ui/provider-quota-show-all-quotas.test.tsx`, `appearance-widget-settings-schema.test.ts` and `theme-boot-script-palette.test.ts`.
 
 ## Get the build without compiling
 
@@ -114,6 +117,18 @@ node ~/.local/share/omniroute-fork/node_modules/omniroute/bin/omniroute.mjs
 Restart whatever runs it (for example a systemd user service) after installing. `dist/BUILD_SHA`
 inside the package is the commit it was built from.
 
+## GitHub Actions
+
+The fork inherits about 30 workflows from upstream. Most need upstream's self-hosted runners or its
+secrets (Docker Hub, npm, a VPS), so they cannot pass here and only produced failure emails. They are
+disabled in GitHub (Actions > the workflow > "Disable workflow"), not removed from the repository, so
+syncing with upstream never conflicts on them.
+
+- **Active**: `fork-build`, `fork-sync`, `lock-released-branch`, `release-acceptance`, `scorecard`, `cancel-closed-pr-runs`, and the pull request checks `ci`, `quality`, `semgrep`, `api-route-typecheck` and the two `opencode-*-ci`.
+- **Disabled**: the `nightly-*` and `mutation-*` runs, `docker-publish`, `deploy-vps`, `electron-release`, `npm-publish`, `claude`, `wiki-sync`, `radar-export`, `test-quarantine`, `base-ci-repair` and `build`.
+
+To turn one back on, open it under Actions and press "Enable workflow".
+
 ## Repository rules
 
 Two rulesets protect the fork. Both let the repository admin bypass them.
@@ -121,7 +136,8 @@ Two rulesets protect the fork. Both let the repository admin bypass them.
 - **No direct pushes** (every branch): no branch deletion, no force push, changes only through a pull request.
 - **Release needs PR and approval** (`release/**`): a pull request with one approval, code owner review, resolved conversations, and stale approvals dismissed on new pushes.
 
-`.github/CODEOWNERS` names the fork owner. Merged branches are deleted automatically. With a single
+`.github/CODEOWNERS` names the fork owner. Merged branches are deleted automatically, and the ruleset
+still lets the admin delete a branch by hand. With a single
 collaborator nobody else can approve, so the admin bypass is how pull requests get merged.
 
 ## Requirements
@@ -165,11 +181,26 @@ node --import tsx --test \
   tests/unit/appearance-widget-settings-schema.test.ts \
   tests/unit/theme-boot-script-palette.test.ts
 
+# Home layout helpers (Node test runner)
+node --import tsx --test \
+  tests/unit/home-usage-trend.test.ts \
+  tests/unit/home-quota-paging.test.ts \
+  tests/unit/home-spacing.test.ts
+
 npm run lint
 ```
 
 The dashboard type check (`tsconfig.typecheck-dashboard.json`) already reports errors that are
 unrelated to these changes.
+
+## Contributing upstream
+
+Work meant for upstream lives on its own branch cut from upstream's `release/vX.Y.Z`, never from this
+fork's release, so it carries none of the fork-only files (workflows, README, Sticky palette). The
+fork's rules forbid force pushes, so a rebased branch gets a new name (`-v2`, `-v3`).
+
+- The usage block, quota card and switches: branch `pr/home-usage-widgets-v2`, discussed in
+  [cheaper-inference/OmniRoute#20202](https://github.com/cheaper-inference/OmniRoute/issues/20202).
 
 ## Documentation
 
