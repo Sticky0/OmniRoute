@@ -12,14 +12,14 @@ The full upstream README is kept as [`docs/ORIGINAL_README.md`](docs/ORIGINAL_RE
 
 The `/home` dashboard page now shows usage at a glance, without opening Analytics.
 
-![The /home page: usage cards with the range selector, usage by combo, activity heatmap, Claude provider quota, provider topology and recent requests](docs/screenshots/fork-home.png)
+![The /home page: usage cards with the range selector, usage by combo, activity heatmap, provider quotas (Claude Code, OpenAI Codex, OpenCode Go), provider topology and recent requests](docs/screenshots/fork-home.png)
 
 | Area                 | Change                                                                                                                                    |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Usage block          | Total, input and output tokens, estimated cost, errors with success and fallback rate, and the activity heatmap. Same cards as Analytics. |
 | Range selector       | 1D, 7D, 30D, 90D, YTD, All and Custom (reuses the Analytics range picker).                                                                |
 | Usage by combo       | Requests and tokens per combo for the selected range. New endpoint `GET /api/usage/by-combo`.                                             |
-| Claude quota         | Provider quota card next to the usage block, showing every quota row (no "show more" toggle).                                             |
+| Provider quotas      | Quota card next to the usage block for every connected provider with quota tracking, showing every quota row (no "show more" toggle).     |
 | Layout               | Usage and quota side by side; topology and recent requests are shorter and share the same height.                                         |
 | Removed from `/home` | The host CPU and memory cards (the component still exists, it is just not mounted).                                                       |
 
