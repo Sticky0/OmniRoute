@@ -26,16 +26,17 @@ export default async function HomePage() {
       <CheaperInferenceSponsorBanner />
       <VscodeCopilotBanner />
       <NewsBanner />
-      <HomeUsageWidgets
-        showStats={settings.showUsageStatsOnHome !== false}
-        showHeatmap={settings.showActivityHeatmapOnHome !== false}
-        aside={
-          settings.showProviderQuotaOnHome !== false ? (
-            <ProviderQuotaWidget showAllQuotas />
-          ) : undefined
-        }
-      />
-      <HomePageClient machineId={machineId} />
+      <HomePageClient machineId={machineId}>
+        <HomeUsageWidgets
+          showStats={settings.showUsageStatsOnHome !== false}
+          showHeatmap={settings.showActivityHeatmapOnHome !== false}
+          aside={
+            settings.showProviderQuotaOnHome !== false ? (
+              <ProviderQuotaWidget showAllQuotas />
+            ) : undefined
+          }
+        />
+      </HomePageClient>
     </>
   );
 }
