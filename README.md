@@ -1,6 +1,6 @@
 # OmniRoute
 
-OmniRoute is a local AI gateway: one OpenAI-compatible endpoint (`/v1`) in front of 393 providers,
+OmniRoute is a local AI gateway: one OpenAI-compatible endpoint (`/v1`) in front of 394 providers,
 with combos (ordered fallback chains), quota tracking, compression, MCP and A2A.
 This repository is a fork of [cheaper-inference/OmniRoute](https://github.com/cheaper-inference/OmniRoute).
 

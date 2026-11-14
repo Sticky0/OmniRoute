@@ -1,0 +1,76 @@
+name: Fork Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "feature/home-widgets*"
+    paths-ignore:
+      - ".github/workflows/**"
+      - "README.md"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fork-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build npm tarball
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Expand virtual memory (10GB swap)
+        run: |
+          sudo swapoff -a || true
+          sudo rm -f /mnt/swapfile /swapfile
+          sudo fallocate -l 10G /mnt/swapfile || sudo dd if=/dev/zero of=/mnt/swapfile bs=1M count=10240
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          free -h
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          ONNXRUNTIME_NODE_INSTALL: "skip"
+
+      - name: Build app and CLI bundle
+        run: npm run build:release
+        env:
+          NODE_OPTIONS: "--max-old-space-size=10240"
+          OMNIROUTE_BUILD_MEMORY_MB: "10240"
+          OMNIROUTE_USE_TURBOPACK: "0"
+          JWT_SECRET: ci-build-secret-with-sufficient-length-for-validation
+
+      - name: Pack tarball
+        id: pack
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          npm pack --ignore-scripts --silent
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          ls -lh *.tgz
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: fork-v${{ steps.pack.outputs.version }}-${{ github.run_number }}
+        run: |
+          gh release create "$TAG" ./*.tgz \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --notes "Build of $GITHUB_REF_NAME at $GITHUB_SHA"
