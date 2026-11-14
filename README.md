@@ -19,10 +19,13 @@ The `/home` dashboard page now shows usage at a glance, without opening Analytic
 | Usage block          | Total, input and output tokens, estimated cost, errors with success and fallback rate, and the activity heatmap. Same cards as Analytics. |
 | Range selector       | 1D, 7D, 30D, 90D, YTD, All and Custom (reuses the Analytics range picker).                                                                |
 | Usage by combo       | Requests and tokens per combo for the selected range. New endpoint `GET /api/usage/by-combo`.                                             |
+| Trend                | The token and cost cards show the change against the previous period of the same length ("+12% vs. previous period"). Not shown for All.  |
+| Loading and errors   | A skeleton while the first response loads, and a Retry button when it fails.                                                              |
 | Provider quotas      | Quota card next to the usage block for every provider with quota tracking, showing every quota row (no "show more" toggle).               |
+| Quota scrolling      | The card fills the height of the usage block and scrolls inside it one whole page of providers at a time, so none is ever cut in half.    |
 | Active only          | Only active connections appear, the same rule as the topology. Deactivated ones are hidden.                                               |
-| Account labels       | The connection name is shown, never the account email (a name that looks like an email is hidden too).                                    |
-| Layout               | Usage and quota side by side; the usage cards keep their natural height; topology and recent requests are shorter and share one height.   |
+| Account labels       | The connection name is shown. An email is hidden unless the email visibility setting allows it, and the quota bars are progress bars.     |
+| Layout               | Quick Start comes first, then usage and quota side by side. All home blocks and the cards inside them share one 12px gap.                 |
 | Show or hide         | Three new switches in Settings > Appearance > "Pin Information to Home Page" (see below). All are on by default.                          |
 | Removed from `/home` | The host CPU and memory cards (the component still exists, it is just not mounted).                                                       |
 
@@ -80,7 +83,8 @@ Calls without a combo are ignored. Upstream HTTP attempts are not counted as ext
 
 ### Changed files
 
-- `src/app/(dashboard)/home/HomeUsageWidgets.tsx` (new): the usage block, with `showStats` and `showHeatmap` props.
+- `src/app/(dashboard)/home/HomeUsageWidgets.tsx` (new): the usage block, with `showStats` and `showHeatmap` props, the trend, the skeleton and the retry button.
+- `src/app/(dashboard)/home/usageTrend.ts` and `quotaPaging.ts` (new): the previous-period window and the whole-page packing of the quota card.
 - `src/app/(dashboard)/home/page.tsx` and `loadHomeSettings.ts`: read the three switches on the server and mount the usage block with the quota card as `aside`.
 - `src/app/(dashboard)/home/ProviderQuotaWidget.tsx`: new optional `providers` filter and `showAllQuotas` props; skips deactivated connections and hides account emails.
 - `src/app/(dashboard)/dashboard/settings/components/AppearanceTab.tsx`, `src/shared/validation/settingsSchemas.ts`: the three switches and the Sticky palette option.
