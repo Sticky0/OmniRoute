@@ -107,7 +107,7 @@ async function fetchUsage(query: string) {
   return { analytics, combos };
 }
 
-function useUsageData(range: Range, custom: CustomRange) {
+function useUsageData(range: Range, custom: CustomRange, enabled: boolean) {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [combos, setCombos] = useState<ComboUsage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,6 +115,7 @@ function useUsageData(range: Range, custom: CustomRange) {
   const query = buildUsageQuery(range, custom);
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     fetchUsage(query)
       .then((data) => {
@@ -132,7 +133,7 @@ function useUsageData(range: Range, custom: CustomRange) {
     return () => {
       cancelled = true;
     };
-  }, [query]);
+  }, [query, enabled]);
 
   return { analytics, combos, loading, failed, setLoading };
 }
@@ -241,10 +242,12 @@ function UsageStats({
   view,
   comboRows,
   activityMap,
+  showHeatmap,
 }: {
   view: UsageView;
   comboRows: TopRow[];
   activityMap?: Record<string, number>;
+  showHeatmap: boolean;
 }) {
   const t = useTranslations("home");
   const tAnalytics = useTranslations("analytics");
@@ -297,18 +300,28 @@ function UsageStats({
         color="text-error"
       />
       <TopList title={t("usageByCombo")} emptyLabel={t("usageNoData")} rows={comboRows} />
-      <div className="sm:col-span-2">
-        <ActivityHeatmap activityMap={activityMap} />
-      </div>
+      {showHeatmap && (
+        <div className="sm:col-span-2">
+          <ActivityHeatmap activityMap={activityMap} />
+        </div>
+      )}
     </div>
   );
 }
 
-export default function HomeUsageWidgets({ aside }: { aside?: ReactNode }) {
+export default function HomeUsageWidgets({
+  aside,
+  showStats = true,
+  showHeatmap = true,
+}: {
+  aside?: ReactNode;
+  showStats?: boolean;
+  showHeatmap?: boolean;
+}) {
   const t = useTranslations("home");
   const [range, setRange] = useState<Range>("1d");
   const [custom, setCustom] = useState<CustomRange>({ start: "", end: "" });
-  const { analytics, combos, loading, failed, setLoading } = useUsageData(range, custom);
+  const { analytics, combos, loading, failed, setLoading } = useUsageData(range, custom, showStats);
 
   const selectRange = (value: Range) => {
     if (value === range) return;
@@ -321,6 +334,10 @@ export default function HomeUsageWidgets({ aside }: { aside?: ReactNode }) {
     setLoading(true);
     setRange("custom");
   };
+
+  if (!showStats) {
+    return aside ? <section className="mb-3">{aside}</section> : null;
+  }
 
   return (
     <section
@@ -346,6 +363,7 @@ export default function HomeUsageWidgets({ aside }: { aside?: ReactNode }) {
           view={deriveUsageView(analytics)}
           comboRows={toComboRows(combos)}
           activityMap={analytics?.activityMap}
+          showHeatmap={showHeatmap}
         />
       )}
       {aside && <div className="min-w-0 lg:col-start-2 lg:row-start-2 [&>*]:h-full">{aside}</div>}

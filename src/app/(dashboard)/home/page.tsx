@@ -26,7 +26,15 @@ export default async function HomePage() {
       <CheaperInferenceSponsorBanner />
       <VscodeCopilotBanner />
       <NewsBanner />
-      <HomeUsageWidgets aside={<ProviderQuotaWidget showAllQuotas />} />
+      <HomeUsageWidgets
+        showStats={settings.showUsageStatsOnHome !== false}
+        showHeatmap={settings.showActivityHeatmapOnHome !== false}
+        aside={
+          settings.showProviderQuotaOnHome !== false ? (
+            <ProviderQuotaWidget showAllQuotas />
+          ) : undefined
+        }
+      />
       <HomePageClient machineId={machineId} />
     </>
   );

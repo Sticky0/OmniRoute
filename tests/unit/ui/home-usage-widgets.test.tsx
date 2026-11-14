@@ -99,6 +99,30 @@ describe("HomeUsageWidgets", () => {
     expect(container.querySelector('[data-testid="activity-heatmap"]')).toBeTruthy();
   });
 
+  it("hides the heatmap but keeps the cards when showHeatmap is false", async () => {
+    act(() => root.render(<HomeUsageWidgets showHeatmap={false} />));
+    await flush();
+
+    expect(container.querySelector('[data-testid="activity-heatmap"]')).toBeNull();
+    expect(container.textContent).toContain("totalTokens");
+  });
+
+  it("renders no stats and requests no usage data when showStats is false", async () => {
+    act(() => root.render(<HomeUsageWidgets showStats={false} />));
+    await flush();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(container.textContent).toBe("");
+  });
+
+  it("keeps rendering the aside when the stats are hidden", async () => {
+    act(() => root.render(<HomeUsageWidgets showStats={false} aside={<p>quota-aside</p>} />));
+    await flush();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(container.textContent).toBe("quota-aside");
+  });
+
   it("sums the error breakdown into the errors card", async () => {
     act(() => root.render(<HomeUsageWidgets />));
     await flush();
