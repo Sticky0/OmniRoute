@@ -2073,7 +2073,14 @@
     "systemMetricsHost": "VPS / Agbàlejò",
     "systemMetricsCpuCount": "{count} vCPU • {platform}",
     "systemMetricsProcessCpu": "OmniRoute (ìṣiṣẹ́)",
-    "systemMetricsProcessMemory": "OmniRoute (RSS Ìrántí / Òkìtì)"
+    "systemMetricsProcessMemory": "OmniRoute (RSS Ìrántí / Òkìtì)",
+    "usageWidgetsTitle": "Ìlò",
+    "usageWidgetsRange": "Àkókò",
+    "usageWidgetsError": "Kò ṣeé ṣe láti gbé dátà ìlò wọlé",
+    "usageErrors": "Àṣìṣe",
+    "usageErrorsDetail": "{success}% àṣeyọrí · {fallbacks} fallback ({fallbackRate}%)",
+    "usageByCombo": "Nípa combo (ìbéèrè · token)",
+    "usageNoData": "Kò sí dátà ní àkókò yìí"
   },
   "analytics": {
     "title": "Ìtúpalẹ̀",

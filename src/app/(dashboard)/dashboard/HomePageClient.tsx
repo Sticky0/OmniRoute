@@ -2,7 +2,15 @@
 
 import { useTranslations } from "next-intl";
 
-import { useState, useEffect, useMemo, useCallback, useRef, useSyncExternalStore } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SectionHeader } from "@omniroute/ui-kit/page-header";
@@ -48,6 +56,7 @@ type VersionInfo = {
 
 type HomePageClientProps = {
   machineId?: string;
+  children?: ReactNode;
 };
 
 type ProviderSummaryItem = {
@@ -124,7 +133,7 @@ function emptySubscribe() {
   return () => {};
 }
 
-export default function HomePageClient({ machineId }: HomePageClientProps) {
+export default function HomePageClient({ machineId, children }: HomePageClientProps) {
   const router = useRouter();
   const isElectron = useIsElectron();
   const { openExternal } = useOpenExternal();
@@ -812,7 +821,7 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-3">
         <CardSkeleton />
         <CardSkeleton />
       </div>
@@ -822,7 +831,7 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
   const currentEndpoint = baseUrl;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-3">
       {/* Update Progress Overlay */}
       {showUpdateOverlay && (
         <div className="fixed inset-0 z-[999] bg-[var(--ci-color-overlay)] backdrop-blur-sm flex items-center justify-center p-4">
@@ -1160,8 +1169,10 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
         </section>
       )}
 
+      {children}
+
       {showProviderTopologyOnHome && (
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-3">
+        <div className="grid grid-cols-1 items-stretch lg:grid-cols-[2fr_1fr] gap-3">
           <HomeProviderTopologySection
             providers={topologyProviders}
             lastProvider={lastProvider}
