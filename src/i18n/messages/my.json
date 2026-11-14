@@ -2073,7 +2073,14 @@
     "systemMetricsHost": "VPS / အိမ်ရှင်",
     "systemMetricsCpuCount": "{count} vCPUs • {platform}",
     "systemMetricsProcessCpu": "OmniRoute (လုပ်ငန်းစဉ်)",
-    "systemMetricsProcessMemory": "OmniRoute (RSS / Heap)"
+    "systemMetricsProcessMemory": "OmniRoute (RSS / Heap)",
+    "usageWidgetsTitle": "အသုံးပြုမှု",
+    "usageWidgetsRange": "အချိန်အပိုင်းအခြား",
+    "usageWidgetsError": "အသုံးပြုမှုဒေတာကို ဖွင့်၍မရပါ",
+    "usageErrors": "အမှားများ",
+    "usageErrorsDetail": "{success}% အောင်မြင် · {fallbacks} fallback ({fallbackRate}%)",
+    "usageByCombo": "Combo အလိုက် (တောင်းဆိုမှု · token)",
+    "usageNoData": "ဤအပိုင်းအခြားတွင် ဒေတာမရှိပါ"
   },
   "analytics": {
     "title": "ခွဲခြမ်းစိတ်ဖြာချက်များ",

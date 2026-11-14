@@ -2073,7 +2073,14 @@
     "systemMetricsHost": "VPS / Ospitanti",
     "systemMetricsCpuCount": "{count} vCPUs • {platform}",
     "systemMetricsProcessCpu": "OmniRoute (process)",
-    "systemMetricsProcessMemory": "OmniRoute (RSS / Heap)"
+    "systemMetricsProcessMemory": "OmniRoute (RSS / Heap)",
+    "usageWidgetsTitle": "Użu",
+    "usageWidgetsRange": "Medda ta' żmien",
+    "usageWidgetsError": "Ma setgħux jitgħabbew id-data tal-użu",
+    "usageErrors": "Żbalji",
+    "usageErrorsDetail": "{success}% suċċess · {fallbacks} fallbacks ({fallbackRate}%)",
+    "usageByCombo": "Skont combo (talbiet · tokens)",
+    "usageNoData": "L-ebda data f'din il-medda"
   },
   "analytics": {
     "title": "Analitika",
