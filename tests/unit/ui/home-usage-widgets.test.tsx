@@ -99,6 +99,13 @@ describe("HomeUsageWidgets", () => {
     expect(container.querySelector('[data-testid="activity-heatmap"]')).toBeTruthy();
   });
 
+  it("keeps the cards at their natural height instead of stretching to the aside", async () => {
+    act(() => root.render(<HomeUsageWidgets aside={<p>aside</p>} />));
+    await flush();
+
+    expect(container.querySelector(".content-start")).toBeTruthy();
+  });
+
   it("hides the heatmap but keeps the cards when showHeatmap is false", async () => {
     act(() => root.render(<HomeUsageWidgets showHeatmap={false} />));
     await flush();
