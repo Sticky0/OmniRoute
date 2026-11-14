@@ -5,9 +5,6 @@ on:
   push:
     branches:
       - "release/v*"
-    paths-ignore:
-      - ".github/workflows/**"
-      - "README.md"
 
 permissions:
   contents: write
