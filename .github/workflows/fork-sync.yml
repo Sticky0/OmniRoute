@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   sync:
-    name: Rebase fork branch on latest upstream release
+    name: Create fork/vX.Y.Z from latest upstream release
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -28,10 +28,9 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout fork branch
+      - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: fork
           fetch-depth: 0
           token: ${{ secrets.FORK_SYNC_TOKEN }}
 
@@ -40,27 +39,33 @@ jobs:
           git remote add upstream https://github.com/cheaper-inference/OmniRoute.git
           git fetch --no-tags upstream '+refs/heads/release/*:refs/remotes/upstream/release/*'
 
-      - name: Rebase on latest release
-        id: rebase
+      - name: Create branch for the latest release
+        id: sync
         run: |
           git config user.name "Sticky0"
           git config user.email "isaacsanz@proton.me"
 
           LATEST=$(git for-each-ref --format='%(refname:short)' 'refs/remotes/upstream/release/' \
             | grep -E '^upstream/release/v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
-          echo "Latest upstream release: $LATEST"
+          VERSION=${LATEST#upstream/release/}
+          NEW="fork/$VERSION"
+          echo "Latest upstream release: $VERSION"
 
-          if git merge-base --is-ancestor "$LATEST" HEAD; then
-            echo "Already up to date"
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+          if git show-ref --verify --quiet "refs/remotes/origin/$NEW"; then
+            echo "$NEW already exists"
             exit 0
           fi
 
-          COMMITS=$(git rev-list --reverse HEAD --not --remotes=upstream)
+          PREV=$(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/fork/' \
+            | grep -E '^origin/fork/v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          BASE=${PREV:-origin/release/v3.8.54}
+          echo "Base for own commits: $BASE"
+
+          COMMITS=$(git rev-list --reverse --no-merges "$BASE" --not --remotes=upstream)
           echo "Own commits:"
           git log --oneline $COMMITS
 
-          git checkout -q -B rebased "$LATEST"
+          git checkout -q -B "$NEW" "$LATEST"
           for C in $COMMITS; do
             if git cherry-pick "$C"; then continue; fi
             CONFLICTS=$(git diff --name-only --diff-filter=U)
@@ -72,23 +77,18 @@ jobs:
               echo "::error::Conflict in: $CONFLICTS (commit $C)"
               git cherry-pick --abort
               echo "conflict=true" >> "$GITHUB_OUTPUT"
-              echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
+              echo "latest=$VERSION" >> "$GITHUB_OUTPUT"
               exit 1
             fi
           done
 
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-          echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
-
-      - name: Push
-        if: steps.rebase.outputs.changed == 'true'
-        run: git push --force-with-lease=fork origin rebased:fork
+          git push origin "$NEW"
 
       - name: Open issue on conflict
-        if: failure() && steps.rebase.outputs.conflict == 'true'
+        if: failure() && steps.sync.outputs.conflict == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh issue create --repo "$GITHUB_REPOSITORY" \
-            --title "Fork sync conflict with ${{ steps.rebase.outputs.latest }}" \
-            --body "Rebase of branch fork onto ${{ steps.rebase.outputs.latest }} had conflicts. See $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. Resolve it locally."
+            --title "Fork sync conflict with ${{ steps.sync.outputs.latest }}" \
+            --body "Cherry-pick of own commits onto upstream ${{ steps.sync.outputs.latest }} had conflicts. See $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. Resolve it locally."
