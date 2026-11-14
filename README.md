@@ -1,15 +1,18 @@
 # OmniRoute
 
-OmniRoute is a local AI gateway: one OpenAI-compatible endpoint (`/v1`) in front of 380 providers,
+OmniRoute is a local AI gateway: one OpenAI-compatible endpoint (`/v1`) in front of 394 providers,
 with combos (ordered fallback chains), quota tracking, compression, MCP and A2A.
 This repository is a fork of [cheaper-inference/OmniRoute](https://github.com/cheaper-inference/OmniRoute).
 
 This README only covers what this fork changes and how to run it. For everything else
 (providers, routing strategies, CLI, deployment) see the [`docs/`](docs/) folder.
+The full upstream README is kept as [`docs/ORIGINAL_README.md`](docs/ORIGINAL_README.md).
 
 ## What this fork changes
 
 The `/home` dashboard page now shows usage at a glance, without opening Analytics.
+
+![The /home page: usage cards with the range selector, usage by combo, activity heatmap, Claude provider quota, provider topology and recent requests](docs/screenshots/fork-home.png)
 
 | Area                 | Change                                                                                                                                    |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
