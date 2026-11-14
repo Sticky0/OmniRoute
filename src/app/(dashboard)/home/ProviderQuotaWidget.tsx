@@ -128,7 +128,8 @@ function ConnectionQuotas({
   const primaryQuotas = quotas.slice(0, PRIMARY_QUOTA_COUNT);
   const optionalQuotas = quotas.slice(PRIMARY_QUOTA_COUNT);
   const optionalVisible = showAll || showOptional;
-  const accountLabel = connection.name || connection.displayName || connection.email;
+  const rawLabel = connection.name || connection.displayName;
+  const accountLabel = rawLabel && !rawLabel.includes("@") ? rawLabel : null;
 
   return (
     <div className="min-w-0">
