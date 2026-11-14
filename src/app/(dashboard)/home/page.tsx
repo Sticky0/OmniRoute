@@ -32,7 +32,7 @@ export default async function HomePage() {
           showHeatmap={settings.showActivityHeatmapOnHome !== false}
           aside={
             settings.showProviderQuotaOnHome !== false ? (
-              <ProviderQuotaWidget showAllQuotas />
+              <ProviderQuotaWidget showAllQuotas fillHeight />
             ) : undefined
           }
         />

@@ -2,9 +2,10 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { Button, Card } from "@/shared/components";
+import { Button, Card, Skeleton } from "@/shared/components";
 import { fmtCompact, fmtCost, fmtFull } from "@/shared/utils/formatting";
 import { ActivityHeatmap, CustomRangePicker, StatCard } from "@/shared/components/analytics";
+import { formatPercentChange, percentChange, previousWindow } from "./usageTrend";
 
 const RANGES = ["1d", "7d", "30d", "90d", "ytd", "all"] as const;
 type Range = (typeof RANGES)[number] | "custom";
@@ -95,33 +96,51 @@ function buildUsageQuery(range: Range, custom: CustomRange): string {
   return params.toString();
 }
 
-async function fetchUsage(query: string) {
-  const [analyticsRes, combosRes] = await Promise.all([
+async function fetchPrevious(range: Range, custom: CustomRange): Promise<Analytics | null> {
+  const window = previousWindow(range, custom);
+  if (!window) return null;
+  try {
+    const params = new URLSearchParams({ range: "custom", ...window });
+    const response = await fetch(
+      `/api/usage/analytics?${params.toString()}&includeFlatRateEstimates=true`
+    );
+    return response.ok ? ((await response.json()) as Analytics) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchUsage(query: string, range: Range, custom: CustomRange) {
+  const [analyticsRes, combosRes, previous] = await Promise.all([
     fetch(`/api/usage/analytics?${query}&includeFlatRateEstimates=true`),
     fetch(`/api/usage/by-combo?${query}`),
+    fetchPrevious(range, custom),
   ]);
   if (!analyticsRes.ok) throw new Error("analytics");
   const analytics = (await analyticsRes.json()) as Analytics;
   const combosData = combosRes.ok ? await combosRes.json() : { combos: [] };
   const combos: ComboUsage[] = Array.isArray(combosData?.combos) ? combosData.combos : [];
-  return { analytics, combos };
+  return { analytics, combos, previous };
 }
 
 function useUsageData(range: Range, custom: CustomRange, enabled: boolean) {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [previous, setPrevious] = useState<Analytics | null>(null);
   const [combos, setCombos] = useState<ComboUsage[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const query = buildUsageQuery(range, custom);
 
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
-    fetchUsage(query)
+    fetchUsage(query, range, custom)
       .then((data) => {
         if (cancelled) return;
         setFailed(false);
         setAnalytics(data.analytics);
+        setPrevious(data.previous);
         setCombos(data.combos);
       })
       .catch(() => {
@@ -133,9 +152,16 @@ function useUsageData(range: Range, custom: CustomRange, enabled: boolean) {
     return () => {
       cancelled = true;
     };
-  }, [query, enabled]);
+    // `range` and `custom` are already folded into `query`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, enabled, attempt]);
 
-  return { analytics, combos, loading, failed, setLoading };
+  const retry = () => {
+    setLoading(true);
+    setAttempt((value) => value + 1);
+  };
+
+  return { analytics, previous, combos, loading, failed, setLoading, retry };
 }
 
 function RangeButton({
@@ -238,39 +264,55 @@ function UsageRangeSelector({
   );
 }
 
+function trendLabel(current: number, previous: number | undefined, text: string) {
+  if (previous === undefined) return undefined;
+  const change = percentChange(current, previous);
+  return change === null ? undefined : `${formatPercentChange(change)} ${text}`;
+}
+
 function UsageStats({
   view,
+  previousView,
   comboRows,
   activityMap,
   showHeatmap,
 }: {
   view: UsageView;
+  previousView: UsageView | null;
   comboRows: TopRow[];
   activityMap?: Record<string, number>;
   showHeatmap: boolean;
 }) {
   const t = useTranslations("home");
   const tAnalytics = useTranslations("analytics");
+  const vsPrevious = t("usageVsPrevious");
+  const vsPreviousShort = t("usageVsPreviousShort");
   const costTooltip = `$${view.totalCost.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 6,
   })}`;
 
   return (
-    <div className="grid grid-cols-1 content-start gap-2 sm:grid-cols-2 lg:col-start-1 lg:row-start-2">
-      <div className="grid grid-cols-2 gap-2 sm:col-span-2 sm:grid-cols-4">
+    <div className="grid grid-cols-1 content-start gap-3 sm:grid-cols-2 lg:col-start-1 lg:row-start-2">
+      <div className="grid grid-cols-2 gap-3 sm:col-span-2 sm:grid-cols-4">
         <StatCard
           icon="generating_tokens"
           label={tAnalytics("totalTokens")}
           value={fmtCompact(view.totalTokens)}
           tooltip={fmtFull(view.totalTokens)}
-          subValue={`${fmtFull(view.totalRequests)} ${tAnalytics("chartRequests")}`}
+          subValue={[
+            `${fmtFull(view.totalRequests)} ${tAnalytics("chartRequests")}`,
+            trendLabel(view.totalTokens, previousView?.totalTokens, vsPreviousShort),
+          ]
+            .filter(Boolean)
+            .join(" · ")}
         />
         <StatCard
           icon="input"
           label={tAnalytics("inputTokens")}
           value={fmtCompact(view.promptTokens)}
           tooltip={fmtFull(view.promptTokens)}
+          subValue={trendLabel(view.promptTokens, previousView?.promptTokens, vsPrevious)}
           color="text-primary"
         />
         <StatCard
@@ -278,6 +320,7 @@ function UsageStats({
           label={tAnalytics("outputTokens")}
           value={fmtCompact(view.completionTokens)}
           tooltip={fmtFull(view.completionTokens)}
+          subValue={trendLabel(view.completionTokens, previousView?.completionTokens, vsPrevious)}
           color="text-success"
         />
         <StatCard
@@ -285,6 +328,7 @@ function UsageStats({
           label={tAnalytics("estCost")}
           value={fmtCost(view.totalCost)}
           tooltip={costTooltip}
+          subValue={trendLabel(view.totalCost, previousView?.totalCost, vsPrevious)}
           color="text-warning"
         />
       </div>
@@ -309,6 +353,25 @@ function UsageStats({
   );
 }
 
+function UsageStatsSkeleton({ showHeatmap, label }: { showHeatmap: boolean; label: string }) {
+  return (
+    <div
+      role="status"
+      aria-label={label}
+      className="grid grid-cols-1 content-start gap-3 sm:grid-cols-2 lg:col-start-1 lg:row-start-2"
+    >
+      <div className="grid grid-cols-2 gap-3 sm:col-span-2 sm:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-[97px] w-full rounded-lg" />
+        ))}
+      </div>
+      <Skeleton className="h-[96px] w-full rounded-lg" />
+      <Skeleton className="h-[96px] w-full rounded-lg" />
+      {showHeatmap && <Skeleton className="h-[222px] w-full rounded-lg sm:col-span-2" />}
+    </div>
+  );
+}
+
 export default function HomeUsageWidgets({
   aside,
   showStats = true,
@@ -321,7 +384,12 @@ export default function HomeUsageWidgets({
   const t = useTranslations("home");
   const [range, setRange] = useState<Range>("1d");
   const [custom, setCustom] = useState<CustomRange>({ start: "", end: "" });
-  const { analytics, combos, loading, failed, setLoading } = useUsageData(range, custom, showStats);
+  const { analytics, previous, combos, loading, failed, setLoading, retry } = useUsageData(
+    range,
+    custom,
+    showStats
+  );
+  const tCommon = useTranslations("common");
 
   const selectRange = (value: Range) => {
     if (value === range) return;
@@ -340,10 +408,7 @@ export default function HomeUsageWidgets({
   }
 
   return (
-    <section
-      className="grid grid-cols-1 gap-x-3 gap-y-2 lg:grid-cols-[2fr_1fr]"
-      aria-busy={loading}
-    >
+    <section className="grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr]" aria-busy={loading}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-semibold text-text-main">{t("usageWidgetsTitle")}</h2>
         <UsageRangeSelector
@@ -355,18 +420,31 @@ export default function HomeUsageWidgets({
       </div>
 
       {failed ? (
-        <Card className="p-4 text-sm text-text-muted lg:col-start-1 lg:row-start-2">
-          {t("usageWidgetsError")}
+        <Card
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-text-muted lg:col-start-1 lg:row-start-2"
+        >
+          <span>{t("usageWidgetsError")}</span>
+          <Button size="sm" variant="outline" onClick={retry} disabled={loading}>
+            {tCommon("retry")}
+          </Button>
         </Card>
+      ) : loading && !analytics ? (
+        <UsageStatsSkeleton showHeatmap={showHeatmap} label={tCommon("loading")} />
       ) : (
         <UsageStats
           view={deriveUsageView(analytics)}
+          previousView={previous ? deriveUsageView(previous) : null}
           comboRows={toComboRows(combos)}
           activityMap={analytics?.activityMap}
           showHeatmap={showHeatmap}
         />
       )}
-      {aside && <div className="min-w-0 lg:col-start-2 lg:row-start-2 [&>*]:h-full">{aside}</div>}
+      {aside && (
+        <div className="relative min-h-[22rem] min-w-0 lg:col-start-2 lg:row-start-2">
+          <div className="lg:absolute lg:inset-0">{aside}</div>
+        </div>
+      )}
     </section>
   );
 }

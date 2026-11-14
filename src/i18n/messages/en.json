@@ -2080,7 +2080,9 @@
     "usageErrors": "Errors",
     "usageErrorsDetail": "{success}% success · {fallbacks} fallbacks ({fallbackRate}%)",
     "usageByCombo": "By combo (requests · tokens)",
-    "usageNoData": "No data in this range"
+    "usageNoData": "No data in this range",
+    "usageVsPrevious": "vs. previous period",
+    "usageVsPreviousShort": "vs. prev."
   },
   "analytics": {
     "title": "Analytics",
@@ -7845,8 +7847,6 @@
     "paletteEditionsDesc": "Warm neutrals with a copper accent",
     "paletteClassic": "Classic",
     "paletteClassicDesc": "Cool neutrals with a lime accent",
-    "paletteSticky": "Sticky",
-    "paletteStickyDesc": "Warm paper and night plum with a purple accent",
     "endpointTunnelVisibility": "Endpoint tunnel visibility",
     "endpointTunnelVisibilityDesc": "Hide tunnel controls from the Endpoint page without changing tunnel state.",
     "showCloudflareTunnel": "Cloudflare Quick Tunnel",

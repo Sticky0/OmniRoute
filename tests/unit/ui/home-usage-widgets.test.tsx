@@ -165,6 +165,111 @@ describe("HomeUsageWidgets", () => {
     expect(container.textContent).toContain("usageWidgetsError");
   });
 
+  it("shows a loading skeleton until the first response arrives", async () => {
+    let release: (value: Response) => void = () => {};
+    fetchMock.mockImplementation((url: string) => {
+      if (url.startsWith("/api/usage/by-combo")) return jsonResponse({ combos });
+      if (url.includes("range=custom")) return jsonResponse(analytics);
+      return new Promise<Response>((resolve) => {
+        release = resolve;
+      });
+    });
+    act(() => root.render(<HomeUsageWidgets />));
+    await flush();
+
+    expect(container.querySelector('[role="status"]')).toBeTruthy();
+    expect(container.textContent).not.toContain("totalTokens");
+
+    release({ ok: true, json: async () => analytics } as Response);
+    await flush();
+    await flush();
+
+    expect(container.querySelector('[role="status"]')).toBeNull();
+    expect(container.textContent).toContain("totalTokens");
+  });
+
+  it("offers a retry button when analytics fails and recovers on success", async () => {
+    let healthy = false;
+    fetchMock.mockImplementation((url: string) => {
+      if (url.startsWith("/api/usage/by-combo")) return jsonResponse({ combos });
+      return healthy ? jsonResponse(analytics) : jsonResponse({}, false);
+    });
+    act(() => root.render(<HomeUsageWidgets />));
+    await flush();
+
+    expect(container.querySelector('[role="alert"]')).toBeTruthy();
+    const retry = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent === "retry"
+    ) as HTMLButtonElement;
+    expect(retry).toBeTruthy();
+
+    healthy = true;
+    act(() => retry.click());
+    await flush();
+    await flush();
+
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(container.textContent).toContain("totalTokens");
+  });
+
+  it("shows the change against the previous period when there is one", async () => {
+    const previousSummary = { ...analytics.summary, promptTokens: 750, completionTokens: 250 };
+    fetchMock.mockImplementation((url: string) => {
+      if (url.startsWith("/api/usage/by-combo")) return jsonResponse({ combos });
+      const isPrevious = url.includes("range=custom");
+      return jsonResponse(isPrevious ? { ...analytics, summary: previousSummary } : analytics);
+    });
+    act(() => root.render(<HomeUsageWidgets />));
+    await flush();
+    await flush();
+
+    expect(container.textContent).toContain("+100%");
+    expect(container.textContent).toContain("usageVsPrevious");
+  });
+
+  it("uses the short label on the total tokens card, which shares its line with the request count", async () => {
+    const previousSummary = { ...analytics.summary, promptTokens: 750, completionTokens: 250 };
+    fetchMock.mockImplementation((url: string) => {
+      if (url.startsWith("/api/usage/by-combo")) return jsonResponse({ combos });
+      const isPrevious = url.includes("range=custom");
+      return jsonResponse(isPrevious ? { ...analytics, summary: previousSummary } : analytics);
+    });
+    act(() => root.render(<HomeUsageWidgets />));
+    await flush();
+    await flush();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("chartRequests · +100% usageVsPreviousShort");
+    expect(text).toContain("+100% usageVsPrevious");
+  });
+
+  it("shows no trend for the all range or when the previous period is empty", async () => {
+    act(() => root.render(<HomeUsageWidgets />));
+    await flush();
+    const all = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent === "periodAll"
+    ) as HTMLButtonElement;
+    act(() => all.click());
+    await flush();
+    await flush();
+
+    expect(container.textContent).not.toContain("usageVsPrevious");
+  });
+
+  it("still renders the cards when the previous period cannot be loaded", async () => {
+    fetchMock.mockImplementation((url: string) => {
+      if (url.startsWith("/api/usage/by-combo")) return jsonResponse({ combos });
+      return url.includes("range=custom") ? jsonResponse({}, false) : jsonResponse(analytics);
+    });
+    act(() => root.render(<HomeUsageWidgets />));
+    await flush();
+    await flush();
+
+    expect(container.textContent).toContain("totalTokens");
+    expect(container.textContent).not.toContain("usageVsPrevious");
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
+
   it("offers 90d, ytd and all ranges", async () => {
     act(() => root.render(<HomeUsageWidgets />));
     await flush();

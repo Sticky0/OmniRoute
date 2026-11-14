@@ -2080,7 +2080,9 @@
     "usageErrors": "Errores",
     "usageErrorsDetail": "{success}% éxito · {fallbacks} fallbacks ({fallbackRate}%)",
     "usageByCombo": "Por combo (peticiones · tokens)",
-    "usageNoData": "Sin datos en este rango"
+    "usageNoData": "Sin datos en este rango",
+    "usageVsPrevious": "vs. periodo anterior",
+    "usageVsPreviousShort": "vs. ant."
   },
   "analytics": {
     "title": "Analítica",
@@ -7845,8 +7847,6 @@
     "paletteEditionsDesc": "Tonos neutros cálidos con un acento cobrizo",
     "paletteClassic": "Clásico",
     "paletteClassicDesc": "Tonos neutros fríos con un acento verde lima",
-    "paletteSticky": "Sticky",
-    "paletteStickyDesc": "Papel cálido y noche mora con acento morado",
     "endpointTunnelVisibility": "Visibilidad del túnel de punto final",
     "endpointTunnelVisibilityDesc": "Oculte los controles del túnel desde la página Endpoint sin cambiar el estado del túnel.",
     "showCloudflareTunnel": "Túnel rápido de Cloudflare",

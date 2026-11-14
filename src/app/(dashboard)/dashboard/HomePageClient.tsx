@@ -821,7 +821,7 @@ export default function HomePageClient({ machineId, children }: HomePageClientPr
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-3">
         <CardSkeleton />
         <CardSkeleton />
       </div>
@@ -831,7 +831,7 @@ export default function HomePageClient({ machineId, children }: HomePageClientPr
   const currentEndpoint = baseUrl;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-3">
       {/* Update Progress Overlay */}
       {showUpdateOverlay && (
         <div className="fixed inset-0 z-[999] bg-[var(--ci-color-overlay)] backdrop-blur-sm flex items-center justify-center p-4">

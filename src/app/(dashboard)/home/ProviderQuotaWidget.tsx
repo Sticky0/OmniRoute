@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import Button from "@/shared/components/Button";
 import Icon from "@/shared/components/Icon";
@@ -8,6 +8,9 @@ import { Spinner } from "@/shared/components/Loading";
 import Card from "@/shared/components/Card";
 import ProviderIcon from "@/shared/components/ProviderIcon";
 import { supportsProviderQuota } from "@/shared/utils/providerQuotaVisibility";
+import { pickDisplayValue } from "@/shared/utils/maskEmail";
+import { packPages, samePaging, type QuotaPaging } from "./quotaPaging";
+import useEmailPrivacyStore from "@/store/emailPrivacyStore";
 import QuotaMiniBar from "../dashboard/usage/components/ProviderLimits/QuotaMiniBar";
 import { PROVIDER_LABEL } from "../dashboard/usage/components/ProviderLimits/constants";
 import { translateUsageOrFallback } from "../dashboard/usage/components/ProviderLimits/i18nFallback";
@@ -43,6 +46,8 @@ interface ProviderQuotaWidgetProps {
   compact?: boolean;
   providers?: string[];
   showAllQuotas?: boolean;
+  /** Fill the height of the parent and scroll the providers inside, one whole page at a time. */
+  fillHeight?: boolean;
 }
 
 function formatUpdatedAt(updatedAt: number | null): string | null {
@@ -105,8 +110,18 @@ function QuotaRow({ quota }: { quota: any }) {
               })}
         </span>
       </div>
-      {!quota.unlimited && <QuotaMiniBar percent={percentage} />}
-      {reset && <span className="text-[10px] text-text-muted">⏱ {reset}</span>}
+      {!quota.unlimited && (
+        <div
+          role="progressbar"
+          aria-label={label}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={percentage}
+        >
+          <QuotaMiniBar percent={percentage} />
+        </div>
+      )}
+      {reset && <span className="text-[11px] text-text-muted">⏱ {reset}</span>}
     </div>
   );
 }
@@ -129,8 +144,12 @@ function ConnectionQuotas({
   const primaryQuotas = quotas.slice(0, PRIMARY_QUOTA_COUNT);
   const optionalQuotas = quotas.slice(PRIMARY_QUOTA_COUNT);
   const optionalVisible = showAll || showOptional;
-  const rawLabel = connection.name || connection.displayName;
-  const accountLabel = rawLabel && !rawLabel.includes("@") ? rawLabel : null;
+  const emailsVisible = useEmailPrivacyStore((state) => state.emailsVisible);
+  const rawLabel = pickDisplayValue(
+    [connection.name, connection.displayName, connection.email],
+    true
+  );
+  const accountLabel = !emailsVisible && rawLabel.includes("@") ? "" : rawLabel;
 
   return (
     <div className="min-w-0">
@@ -183,6 +202,7 @@ export default function ProviderQuotaWidget({
   compact = false,
   providers,
   showAllQuotas = false,
+  fillHeight = false,
 }: ProviderQuotaWidgetProps) {
   const t = useTranslations("usage");
   const tr = useCallback(
@@ -303,8 +323,37 @@ export default function ProviderQuotaWidget({
 
   const updatedLabel = formatUpdatedAt(updatedAt);
 
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const sectionRefs = useRef<Array<HTMLElement | null>>([]);
+  const [paging, setPaging] = useState<QuotaPaging | null>(null);
+  const paged = fillHeight && !compact && !loading && providerGroups.length > 0;
+
+  useLayoutEffect(() => {
+    const container = scrollRef.current;
+    if (!paged || !container) return;
+    const measure = () => {
+      const heights = sectionRefs.current
+        .slice(0, providerGroups.length)
+        .map((node) => node?.getBoundingClientRect().height ?? 0);
+      const next = packPages(heights, container.clientHeight);
+      setPaging((current) => (current && samePaging(current, next) ? current : next));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    sectionRefs.current.forEach((node) => node && observer.observe(node));
+    return () => observer.disconnect();
+  }, [paged, providerGroups, quotaData, showAllQuotas]);
+
   return (
-    <Card padding="none" className="w-full overflow-hidden">
+    <Card
+      padding="none"
+      className={
+        fillHeight
+          ? "relative flex h-full min-h-[22rem] w-full flex-col overflow-hidden"
+          : "w-full overflow-hidden"
+      }
+    >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface/60 px-4 py-3">
         <div className="flex items-center gap-2">
           <Icon name="account_balance" size={20} className="text-primary" />
@@ -368,9 +417,35 @@ export default function ProviderQuotaWidget({
           ))}
         </div>
       ) : (
-        <div className="divide-y divide-border">
-          {providerGroups.map(([provider, providerConnections]) => (
-            <section key={provider} className="grid grid-cols-1 gap-2 px-4 py-3">
+        <div
+          ref={scrollRef}
+          className={
+            fillHeight
+              ? "min-h-0 flex-1 basis-0 snap-y snap-mandatory overflow-y-auto overscroll-contain"
+              : "divide-y divide-border"
+          }
+          tabIndex={fillHeight ? 0 : undefined}
+          aria-label={fillHeight ? tr("providerQuota", "Provider Quota") : undefined}
+        >
+          {providerGroups.map(([provider, providerConnections], index) => (
+            <section
+              key={provider}
+              ref={(node) => {
+                sectionRefs.current[index] = node;
+              }}
+              style={
+                fillHeight && paging?.spacers[index]
+                  ? { marginBottom: paging.spacers[index] }
+                  : undefined
+              }
+              className={`grid grid-cols-1 gap-2 px-4 py-3 ${
+                fillHeight
+                  ? `${index < providerGroups.length - 1 ? "border-b border-border" : ""} ${
+                      paging?.pageStarts[index] ? "snap-start" : ""
+                    }`
+                  : ""
+              }`}
+            >
               <div className="flex min-w-0 items-center gap-2">
                 <ProviderIcon providerId={provider} size={18} />
                 <div className="min-w-0">
