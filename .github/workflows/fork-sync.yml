@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   sync:
-    name: Create fork/vX.Y.Z from latest upstream release
+    name: Keep fork release branch up to date with upstream
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -39,50 +39,61 @@ jobs:
           git remote add upstream https://github.com/cheaper-inference/OmniRoute.git
           git fetch --no-tags upstream '+refs/heads/release/*:refs/remotes/upstream/release/*'
 
-      - name: Create branch for the latest release
+      - name: Sync release branch
         id: sync
+        env:
+          GH_TOKEN: ${{ secrets.FORK_SYNC_TOKEN }}
         run: |
           git config user.name "Sticky0"
           git config user.email "isaacsanz@proton.me"
 
-          LATEST=$(git for-each-ref --format='%(refname:short)' 'refs/remotes/upstream/release/' \
-            | grep -E '^upstream/release/v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
-          VERSION=${LATEST#upstream/release/}
-          NEW="fork/$VERSION"
-          echo "Latest upstream release: $VERSION"
+          latest_release() {
+            git for-each-ref --format='%(refname:short)' "refs/remotes/$1/release/" \
+              | grep -E "^$1/release/v[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -n 1
+          }
 
-          if git show-ref --verify --quiet "refs/remotes/origin/$NEW"; then
-            echo "$NEW already exists"
-            exit 0
-          fi
-
-          PREV=$(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/fork/' \
-            | grep -E '^origin/fork/v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
-          BASE=${PREV:-origin/release/v3.8.54}
-          echo "Base for own commits: $BASE"
-
-          COMMITS=$(git rev-list --reverse --no-merges "$BASE" --not --remotes=upstream)
-          echo "Own commits:"
-          git log --oneline $COMMITS
-
-          git checkout -q -B "$NEW" "$LATEST"
-          for C in $COMMITS; do
-            if git cherry-pick "$C"; then continue; fi
+          merge_or_fail() {
+            KEEP=$2
+            if git merge --no-edit "$1"; then return 0; fi
             CONFLICTS=$(git diff --name-only --diff-filter=U)
             if [ "$CONFLICTS" = "README.md" ]; then
-              git checkout --theirs README.md
+              git checkout "--$KEEP" README.md
               git add README.md
-              GIT_EDITOR=true git cherry-pick --continue
+              git commit --no-edit
             else
-              echo "::error::Conflict in: $CONFLICTS (commit $C)"
-              git cherry-pick --abort
+              echo "::error::Conflict in: $CONFLICTS"
+              git merge --abort
               echo "conflict=true" >> "$GITHUB_OUTPUT"
-              echo "latest=$VERSION" >> "$GITHUB_OUTPUT"
+              echo "version=$VERSION" >> "$GITHUB_OUTPUT"
               exit 1
             fi
-          done
+          }
 
-          git push origin "$NEW"
+          UP=$(latest_release upstream)
+          VERSION=${UP#upstream/release/}
+          BRANCH="release/$VERSION"
+          echo "Latest upstream release: $VERSION"
+
+          if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+            if git merge-base --is-ancestor "$UP" "origin/$BRANCH"; then
+              echo "origin/$BRANCH already contains $UP"
+              exit 0
+            fi
+            TMP="sync/$VERSION-$GITHUB_RUN_ID"
+            git checkout -q -B "$TMP" "origin/$BRANCH"
+            merge_or_fail "$UP" ours
+            git push origin "$TMP"
+            PR=$(gh pr create --repo "$GITHUB_REPOSITORY" --base "$BRANCH" --head "$TMP" \
+              --title "Sync $BRANCH with upstream" --body "Automatic merge of $UP")
+            gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --merge --delete-branch
+          else
+            PREV=$(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/release/' \
+              | grep -E '^origin/release/v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+            echo "New release branch $BRANCH carrying changes from $PREV"
+            git checkout -q -B "$BRANCH" "$UP"
+            merge_or_fail "$PREV" theirs
+            git push origin "$BRANCH"
+          fi
 
       - name: Open issue on conflict
         if: failure() && steps.sync.outputs.conflict == 'true'
@@ -90,5 +101,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh issue create --repo "$GITHUB_REPOSITORY" \
-            --title "Fork sync conflict with ${{ steps.sync.outputs.latest }}" \
-            --body "Cherry-pick of own commits onto upstream ${{ steps.sync.outputs.latest }} had conflicts. See $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. Resolve it locally."
+            --title "Fork sync conflict with upstream ${{ steps.sync.outputs.version }}" \
+            --body "Merge with upstream had conflicts. See $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. Resolve it locally."

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - "fork/v*"
+      - "release/v*"
     paths-ignore:
       - ".github/workflows/**"
       - "README.md"
@@ -74,3 +74,12 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "$TAG" \
             --notes "Build of $GITHUB_REF_NAME at $GITHUB_SHA"
+
+      - name: Update rolling latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mv ./*.tgz omniroute-latest.tgz
+          gh release view fork-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create fork-latest --repo "$GITHUB_REPOSITORY" --title fork-latest --notes "Latest fork build"
+          gh release upload fork-latest omniroute-latest.tgz --repo "$GITHUB_REPOSITORY" --clobber
