@@ -26,7 +26,7 @@ export default async function HomePage() {
       <CheaperInferenceSponsorBanner />
       <VscodeCopilotBanner />
       <NewsBanner />
-      <HomeUsageWidgets aside={<ProviderQuotaWidget providers={["claude"]} showAllQuotas />} />
+      <HomeUsageWidgets aside={<ProviderQuotaWidget showAllQuotas />} />
       <HomePageClient machineId={machineId} />
     </>
   );
