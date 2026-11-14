@@ -7,6 +7,7 @@ import {
   APPEARANCE_ATTRIBUTE,
   DEFAULT_APPEARANCE_PALETTE,
   EDITIONS_APPEARANCE_VALUE,
+  STICKY_APPEARANCE_VALUE,
   isAppearancePalette,
   type AppearancePalette,
 } from "@/shared/constants/appearancePalette";
@@ -44,6 +45,7 @@ export function applyPalette(palette: string) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   if (palette === "classic") root.removeAttribute(APPEARANCE_ATTRIBUTE);
+  else if (palette === "sticky") root.setAttribute(APPEARANCE_ATTRIBUTE, STICKY_APPEARANCE_VALUE);
   else root.setAttribute(APPEARANCE_ATTRIBUTE, EDITIONS_APPEARANCE_VALUE);
 }
 

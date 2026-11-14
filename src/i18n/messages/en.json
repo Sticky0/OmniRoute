@@ -7839,6 +7839,8 @@
     "paletteEditionsDesc": "Warm neutrals with a copper accent",
     "paletteClassic": "Classic",
     "paletteClassicDesc": "Cool neutrals with a lime accent",
+    "paletteSticky": "Sticky",
+    "paletteStickyDesc": "Warm paper and night plum with a purple accent",
     "endpointTunnelVisibility": "Endpoint tunnel visibility",
     "endpointTunnelVisibilityDesc": "Hide tunnel controls from the Endpoint page without changing tunnel state.",
     "showCloudflareTunnel": "Cloudflare Quick Tunnel",

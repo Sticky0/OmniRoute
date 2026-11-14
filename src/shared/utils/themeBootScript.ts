@@ -2,6 +2,7 @@ import { THEME_CONFIG } from "@/shared/constants/appConfig";
 import {
   APPEARANCE_ATTRIBUTE,
   EDITIONS_APPEARANCE_VALUE,
+  STICKY_APPEARANCE_VALUE,
 } from "@/shared/constants/appearancePalette";
 import { PAGE_BACKGROUND_BY_PALETTE } from "@/shared/constants/pwaThemeColors";
 import {
@@ -49,10 +50,11 @@ export const THEME_BOOT_SCRIPT = `try {
   root.dataset.theme = dark ? "dark" : "light";
   root.style.colorScheme = dark ? "dark" : "light";
   var classic = state.palette === "classic";
+  var sticky = state.palette === "sticky";
   if (classic) root.removeAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTE)});
-  else root.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTE)}, ${JSON.stringify(EDITIONS_APPEARANCE_VALUE)});
-  var bg = classic ? ${JSON.stringify(PAGE_BACKGROUND_BY_PALETTE.classic)} : ${JSON.stringify(PAGE_BACKGROUND_BY_PALETTE.editions)};
-  var copyBg = classic ? ${JSON.stringify(bootValues(PAGE_BACKGROUND_BY_PALETTE.classic))} : ${JSON.stringify(bootValues(PAGE_BACKGROUND_BY_PALETTE.editions))};
+  else root.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTE)}, sticky ? ${JSON.stringify(STICKY_APPEARANCE_VALUE)} : ${JSON.stringify(EDITIONS_APPEARANCE_VALUE)});
+  var bg = classic ? ${JSON.stringify(PAGE_BACKGROUND_BY_PALETTE.classic)} : sticky ? ${JSON.stringify(PAGE_BACKGROUND_BY_PALETTE.sticky)} : ${JSON.stringify(PAGE_BACKGROUND_BY_PALETTE.editions)};
+  var copyBg = classic ? ${JSON.stringify(bootValues(PAGE_BACKGROUND_BY_PALETTE.classic))} : sticky ? ${JSON.stringify(bootValues(PAGE_BACKGROUND_BY_PALETTE.sticky))} : ${JSON.stringify(bootValues(PAGE_BACKGROUND_BY_PALETTE.editions))};
   var metas = document.querySelectorAll(${JSON.stringify(THEME_COLOR_META_SELECTOR)});
   if (!metas.length) {
     var meta = document.createElement("meta");

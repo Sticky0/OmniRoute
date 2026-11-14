@@ -22,6 +22,11 @@ export const CLASSIC_PAGE_BACKGROUND = {
   dark: ciTokens.color.neutral[950],
 } as const;
 
+export const STICKY_PAGE_BACKGROUND = {
+  light: "#fff8e1",
+  dark: "#1b0a2e",
+} as const;
+
 /** Browser-chrome colour (live `theme-color`) per palette and light/dark mode. */
 export const PAGE_BACKGROUND_BY_PALETTE: Record<
   AppearancePalette,
@@ -29,6 +34,7 @@ export const PAGE_BACKGROUND_BY_PALETTE: Record<
 > = {
   editions: EDITIONS_PAGE_BACKGROUND,
   classic: CLASSIC_PAGE_BACKGROUND,
+  sticky: STICKY_PAGE_BACKGROUND,
 };
 
 /**

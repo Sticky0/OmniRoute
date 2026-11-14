@@ -15,6 +15,7 @@ import {
 import {
   CLASSIC_PAGE_BACKGROUND,
   EDITIONS_PAGE_BACKGROUND,
+  STICKY_PAGE_BACKGROUND,
 } from "../../src/shared/constants/pwaThemeColors.ts";
 import { resolveThemeColor } from "../../src/shared/utils/themeColorMeta.ts";
 
@@ -120,6 +121,22 @@ test("a stored Classic choice removes the attribute before paint, keeping the th
   assert.equal(classicLight.theme, "light");
 });
 
+test("a stored Sticky choice sets its own attribute before paint, keeping the theme", () => {
+  const dark = boot(persisted({ theme: "dark", palette: "sticky" }));
+  assert.equal(dark.appearance, "sticky");
+  assert.equal(dark.theme, "dark");
+  assert.deepEqual(dark.themeColors, {
+    [LIGHT_MEDIA]: STICKY_PAGE_BACKGROUND.dark,
+    [DARK_MEDIA]: STICKY_PAGE_BACKGROUND.dark,
+  });
+  const light = boot(persisted({ theme: "light", palette: "sticky" }), { prefersDark: true });
+  assert.equal(light.appearance, "sticky");
+  assert.deepEqual(light.themeColors, {
+    [LIGHT_MEDIA]: STICKY_PAGE_BACKGROUND.light,
+    [DARK_MEDIA]: STICKY_PAGE_BACKGROUND.light,
+  });
+});
+
 test("stored Editions, a pre-Editions store and an unknown palette all resolve to Editions", () => {
   assert.equal(boot(persisted({ theme: "light", palette: "editions" })).appearance, "editions");
   assert.equal(boot(persisted({ theme: "light" })).appearance, "editions");
@@ -158,6 +175,7 @@ test("theme-color before paint: palette × explicit light/dark sets every varian
   for (const [palette, bg] of [
     ["editions", EDITIONS_PAGE_BACKGROUND],
     ["classic", CLASSIC_PAGE_BACKGROUND],
+    ["sticky", STICKY_PAGE_BACKGROUND],
   ] as const) {
     for (const prefersDark of [false, true]) {
       const light = boot(persisted({ theme: "light", palette }), { prefersDark });
@@ -251,14 +269,16 @@ test("the error page outside the root layout applies the stored palette too", ()
   assert.match(globalError, /normalizeAppearancePalette\(parsed\?\.state\?\.palette\)/);
   assert.match(
     globalError,
-    /data-ci-appearance=\{palette === "classic" \? undefined : EDITIONS_APPEARANCE_VALUE\}/
+    /data-ci-appearance=\{\s*palette === "classic"\s*\? undefined\s*: palette === "sticky"\s*\? "sticky"\s*: EDITIONS_APPEARANCE_VALUE\s*\}/
   );
 });
 
-test("palette constants: Editions is the default, Classic the only alternative", () => {
-  assert.deepEqual([...APPEARANCE_PALETTES], ["editions", "classic"]);
+test("palette constants: Editions is the default, Classic and Sticky the alternatives", () => {
+  assert.deepEqual([...APPEARANCE_PALETTES], ["editions", "classic", "sticky"]);
   assert.equal(DEFAULT_APPEARANCE_PALETTE, "editions");
   assert.equal(isAppearancePalette("classic"), true);
+  assert.equal(isAppearancePalette("sticky"), true);
+  assert.equal(normalizeAppearancePalette("sticky"), "sticky");
   assert.equal(isAppearancePalette("lime"), false);
   assert.equal(normalizeAppearancePalette(undefined), "editions");
   assert.equal(normalizeAppearancePalette("classic"), "classic");
